@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Ctrl-F</string>
+
+    <string name="image_button">Take Picture</string>
+    <string name="dummy_content">DUMMY\nCONTENT</string>
+    <string name="take_picture">Take picture</string>
+</resources>
