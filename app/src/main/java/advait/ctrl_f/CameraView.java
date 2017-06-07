@@ -28,7 +28,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback{
         mHolder.setType(SurfaceHolder.SURFACE_TYPE_NORMAL);
     }
 
-    public static void setCameraDisplayOrientation(AppCompatActivity activity,
+    public static int setCameraDisplayOrientation(AppCompatActivity activity,
                                                    int cameraId, android.hardware.Camera camera) {
         android.hardware.Camera.CameraInfo info =
                 new android.hardware.Camera.CameraInfo();
@@ -50,8 +50,11 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback{
         } else {  // back-facing
             result = (info.orientation - degrees + 360) % 360;
         }
+        Log.d("ori", Integer.toString(result));
         camera.setDisplayOrientation(result);
+        return result;
     }
+
 
     @Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
