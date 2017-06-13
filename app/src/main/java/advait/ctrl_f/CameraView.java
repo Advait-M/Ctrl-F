@@ -1,5 +1,9 @@
 package advait.ctrl_f;
 
+/**
+ * Class used to display the camera preview. Holds the camera object (mCamera) and interacts with it.
+ */
+
 import android.content.Context;
 import android.hardware.Camera;
 import android.support.v7.app.AppCompatActivity;
@@ -10,17 +14,15 @@ import android.view.SurfaceView;
 
 import java.io.IOException;
 
-/**
- * Created by advai on 6/5/2017.
- */
-
 public class CameraView extends SurfaceView implements SurfaceHolder.Callback{
     private SurfaceHolder mHolder;
     private Camera mCamera;
 
+    //Constructor
     public CameraView(Context context, Camera camera){
         super(context);
 
+        //Set camera to the desired camera (passed in as a parameter)
         mCamera = camera;
 
         mHolder = getHolder();
@@ -28,6 +30,8 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback{
         mHolder.setType(SurfaceHolder.SURFACE_TYPE_NORMAL);
     }
 
+    //Sets camera to the correct display orientation depending on the rotation of the screen
+    //Additionally, returns the current screen orientation (integer representing an angle)
     public static int setCameraDisplayOrientation(AppCompatActivity activity,
                                                    int cameraId, android.hardware.Camera camera) {
         android.hardware.Camera.CameraInfo info =
@@ -55,7 +59,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback{
         return result;
     }
 
-
+    //Called when the SurfaceView is created
     @Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
         try{
@@ -66,6 +70,8 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback{
         }
     }
 
+
+    //Called when the SurfaceView is changed/modified
     @Override
     public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
         if(mHolder.getSurface() == null)
@@ -83,13 +89,11 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback{
         }
     }
 
+
+    //Called when the SurfaceView is destroyed
     @Override
     public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
         mCamera.stopPreview();
         mCamera.release();
-    }
-
-    public void stopFeed(){
-        mCamera.stopPreview();
     }
 }
