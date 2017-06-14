@@ -30,6 +30,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.googlecode.tesseract.android.ResultIterator;
 import com.googlecode.tesseract.android.TessBaseAPI;
@@ -143,6 +144,7 @@ public class CameraActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
+        findViewById(R.id.loadingPanel).setVisibility(View.GONE);
         if (ContextCompat.checkSelfPermission(this, permission.CAMERA) != PackageManager.PERMISSION_GRANTED
                 || ContextCompat.checkSelfPermission(this, permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
                 || ContextCompat.checkSelfPermission(this, permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
@@ -171,6 +173,51 @@ public class CameraActivity extends AppCompatActivity {
         //Call processImage() to do optical character recognition (OCR) using Tesseract
 
     }
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (mCamera != null) {
+            mCamera.setPreviewCallback(null);
+            mPreview.getHolder().removeCallback(mPreview);
+            mCamera.release();
+            mCamera = null;
+        }
+
+
+    }
+    @Override
+    public void onResume() {
+        super.onResume();
+        try {
+            mCamera = Camera.open(Camera.CameraInfo.CAMERA_FACING_BACK);
+        } catch (Exception e) {
+            Log.d("ERROR", "Failed to get Camera: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        Camera.Parameters param;
+        param = mCamera.getParameters();
+
+        Camera.Size bestSize;
+        List<Camera.Size> sizeList = mCamera.getParameters().getSupportedPreviewSizes();
+        bestSize = sizeList.get(0);
+        for (int i = 1; i < sizeList.size(); i++) {
+            if ((sizeList.get(i).width * sizeList.get(i).height) > (bestSize.width * bestSize.height)) {
+                bestSize = sizeList.get(i);
+            }
+        }
+        param.setPictureSize(bestSize.width, bestSize.height);
+        param.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+        mCamera.setParameters(param);
+
+
+        FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
+
+        mPreview = new CameraView(this, mCamera);
+        CameraView.setCameraDisplayOrientation(this, Camera.CameraInfo.CAMERA_FACING_BACK, mCamera);
+        preview.removeAllViews();
+        preview.addView(mPreview);
+    }
     public void main(){
         try {
             mCamera = Camera.open(Camera.CameraInfo.CAMERA_FACING_BACK);
@@ -179,9 +226,11 @@ public class CameraActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
+        FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
+
         mPreview = new CameraView(this, mCamera);
         CameraView.setCameraDisplayOrientation(this, Camera.CameraInfo.CAMERA_FACING_BACK, mCamera);
-        FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
+
         preview.addView(mPreview);
 
         final Button captureButton = (Button) findViewById(R.id.button_capture);
@@ -204,8 +253,11 @@ public class CameraActivity extends AppCompatActivity {
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
+                        findViewById(R.id.loadingPanel).setVisibility(View.VISIBLE);
                         // get an image from the camera
                         mCamera.takePicture(null, null, mPicture);
+
+//                        mCamera.stopPreview();
                         captureButton.setText("Picture Taken");
 
                     }
@@ -253,13 +305,16 @@ public class CameraActivity extends AppCompatActivity {
             lastUTF8Text = iterator.getUTF8Text(PageIteratorLevel.RIL_WORD);
             lastConfidence = iterator.confidence(PageIteratorLevel.RIL_WORD);
             if (lastUTF8Text.toLowerCase().contains(word)) {
-
                 mCanvas.drawRect(iterator.getBoundingRect(PageIteratorLevel.RIL_WORD), colour);
+                count++;
             }
             System.out.println(lastUTF8Text);
             System.out.println(lastConfidence);
-            count++;
 
+        }
+
+        if (count == 0){
+            Toast.makeText(this, "Word not found!", Toast.LENGTH_LONG).show();
         }
         //Bitmap too big to pass through intent
         System.out.println("eh");
@@ -267,19 +322,31 @@ public class CameraActivity extends AppCompatActivity {
         Intent intent = new Intent(this, ResultActivity.class);
         intent.putExtra(EXTRA_MESSAGE, filePath);
         startActivity(intent);
-        finish();
 //        ImageView img = new ImageView(this);
 //        img.setImageBitmap(mutableBitmap);
 //        FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
 //        preview.addView(img);
     }
+
+    //MAYBE REMOVE
+    public String removePunctuation(String s) {
+        String res = "";
+        int counter = 0;
+        for (Character c : s.toCharArray()) {
+            if(Character.isLetterOrDigit(c) || (counter > 0 && counter < s.length()-1)) {
+                res += c;
+            }
+        }
+        return res;
+    }
     //Performs optical character recognition (OCR) on the image using Tesseract and updates screen accordingly
     public void processImage(){
-        String OCRresult = null;
+        findViewById(R.id.loadingPanel).setVisibility(View.GONE);
         mTess.setImage(image);
-        OCRresult = mTess.getUTF8Text();
+        //Calls recognize() in backend
+        String OCRresult = mTess.getUTF8Text();
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Ctrl-F");
+        builder.setTitle("Enter search term:");
 
         // Set up the input
         final EditText input = new EditText(this);
